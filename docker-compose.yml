@@ -1,4 +1,4 @@
-# docker-compose.yml (The Final, Correct Version with Timeout)
+# docker-compose.yml (The Final, Correct Volume Mapping)
 version: '3.8'
 
 services:
@@ -7,15 +7,22 @@ services:
     ports:
       - "5001:5000"
     volumes:
+      # This maps your entire project, including app.py and templates
       - .:/app
+      
+      # THIS IS THE MISSING LINE THAT FIXES EVERYTHING.
+      # It ensures that your static folder on your machine is the same
+      # as the static folder in the container, so changes are reflected.
+      - ./static:/app/static
+
+      # The uploads folder also needs to be explicitly mapped
       - ./uploads:/app/uploads
+
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/expensedb
     depends_on:
       db:
         condition: service_healthy
-    # This command increases the worker timeout to 120 seconds,
-    # giving the app enough time to start on a low-resource machine.
     command: ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "120", "app:app"]
 
   db:

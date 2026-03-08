@@ -4,16 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Using the same version number for consistency -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=13.0">
 </head>
 <body>
     <div class="container">
         <div class="card" style="margin-top: 5rem;">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="App Logo">
+            </div>
+
+            <!-- The h2 "Login to Your Account" provides the necessary title -->
             <h2>Login to Your Account</h2>
-            <!-- Flash messages for errors -->
+            
             {% with messages = get_flashed_messages() %}
               {% if messages %}
-                <div class="alert">{{ messages[0] }}</div>
+                <div class="alert">
+                    {{ messages[0] }}
+                </div>
               {% endif %}
             {% endwith %}
 

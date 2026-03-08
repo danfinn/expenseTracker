@@ -1,9 +1,11 @@
-# app.py (Corrected for Registration Failure)
+# app.py (With Monthly Total Calculation)
 import os
 import re
 from datetime import datetime, date
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+# We need 'func' for the SUM() function and 'extract' for date part extraction
+from sqlalchemy import func, extract
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -131,11 +133,9 @@ def register():
         new_user.set_password(request.form['password'])
         db.session.add(new_user)
         db.session.commit()
-        # --- THIS IS THE FIX ---
-        # Log the user in automatically after registration
         login_user(new_user)
         flash('Registration successful! You are now logged in.')
-        return redirect(url_for('index')) # Redirect to the main app page
+        return redirect(url_for('index'))
     return render_template('register.html')
 
 @app.route('/logout')
@@ -163,9 +163,29 @@ def index():
         db.session.add(new_expense)
         db.session.commit()
         return redirect(url_for('index'))
-    else:
+
+    # --- THIS IS THE NEW LOGIC FOR THE MONTHLY TOTAL ---
+    else: # GET request
+        today = date.today()
+        # Query for the sum of expenses this month
+        monthly_total_query = db.session.query(func.sum(Expense.amount)).filter(
+            Expense.user_id == current_user.id,
+            extract('month', Expense.expense_date) == today.month,
+            extract('year', Expense.expense_date) == today.year
+        )
+        monthly_total = monthly_total_query.scalar() or 0.0
+
+        # Get all expenses for the list
         expenses = db.session.execute(db.select(Expense).where(Expense.user_id == current_user.id).order_by(Expense.expense_date.desc(), Expense.id.desc())).scalars().all()
-        return render_template('index.html', expenses=expenses, today=date.today().isoformat(), currencies=CURRENCIES)
+
+        return render_template(
+            'index.html',
+            expenses=expenses,
+            today=today.isoformat(),
+            currencies=CURRENCIES,
+            monthly_total=monthly_total,
+            current_month_name=today.strftime('%B')
+        )
 
 @app.route('/delete/<int:expense_id>', methods=['POST'])
 @login_required

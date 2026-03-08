@@ -1,12 +1,12 @@
-/* static/style.css */
+/* static/style.css (Final Size and Layout) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
 :root {
-    --primary-color: #3b82f6; /* A modern blue */
+    --primary-color: #3b82f6;
     --primary-hover: #2563eb;
     --danger-color: #ef4444;
     --danger-hover: #dc2626;
-    --bg-color: #f8fafc; /* A very light gray background */
+    --bg-color: #f8fafc;
     --card-bg: #ffffff;
     --text-primary: #1e293b;
     --text-secondary: #64748b;
@@ -28,14 +28,20 @@ body {
 
 header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     margin-bottom: 2.5rem;
 }
 
 header h1 {
     font-size: 2rem;
     font-weight: 700;
+    margin: 0;
+    flex-grow: 1;
+}
+
+nav {
+    flex-shrink: 0;
 }
 
 nav a {
@@ -75,20 +81,21 @@ h2 {
     margin-bottom: 0.5rem;
 }
 
-.form-group input {
+.form-group input, .form-group select {
     width: 100%;
-    box-sizing: border-box; /* Important! */
+    box-sizing: border-box;
     padding: 0.75rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     font-size: 1rem;
+    font-family: inherit;
     transition: box-shadow 0.2s ease-in-out;
 }
 
-.form-group input:focus {
+.form-group input:focus, .form-group select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px var(--primary-color-translucent, rgba(59, 130, 246, 0.4));
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
 }
 
 .btn {
@@ -112,62 +119,44 @@ h2 {
     background-color: var(--primary-hover);
 }
 
-.expense-list {
-    list-style: none;
-    padding: 0;
-}
-
-.expense-item {
-    display: flex;
-    align-items: center;
-    padding: 1.25rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.expense-item:last-child {
-    border-bottom: none;
-}
-
-.expense-details {
-    flex-grow: 1;
-}
-
-.expense-details .description {
-    font-weight: 500;
-}
-
-.expense-details .date {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.expense-amount {
-    font-size: 1.125rem;
-    font-weight: 500;
-}
+.expense-list { list-style: none; padding: 0; }
+.expense-item { display: flex; align-items: center; padding: 1.25rem 0; border-bottom: 1px solid var(--border-color); }
+.expense-item:last-child { border-bottom: none; }
+.expense-details { flex-grow: 1; }
+.expense-details .description { font-weight: 500; }
+.expense-details .date { font-size: 0.875rem; color: var(--text-secondary); }
+.expense-amount { font-size: 1.125rem; font-weight: 500; }
 
 .delete-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0.5rem;
-    margin-left: 1rem;
+    background: none; border: none; color: var(--text-secondary); cursor: pointer;
+    padding: 0.5rem; margin-left: 1rem; font-size: 1.5rem; line-height: 1;
     transition: color 0.2s ease-in-out;
 }
-
-.delete-btn:hover {
-    color: var(--danger-color);
-}
+.delete-btn:hover { color: var(--danger-color); }
 
 .raw-text {
-    background-color: #e9ecef;
-    padding: 15px;
-    margin-top: 20px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 0.8em;
+    background-color: #e9ecef; padding: 15px; margin-top: 20px; border: 1px solid #ced4da;
+    border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.8em;
+}
+
+.alert {
+    background-color: #fefcbf; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.logo-container img {
+    width: 150px;
+    height: auto;
+}
+
+header .logo-img {
+    /* Set to the requested 250px */
+    width: 250px;
+    height: auto;
+    flex-shrink: 0;
 }
 
