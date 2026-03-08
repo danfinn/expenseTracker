@@ -1,4 +1,4 @@
-# docker-compose.yml (The Final, Correct Version)
+# docker-compose.yml
 version: '3.8'
 
 services:
@@ -8,8 +8,12 @@ services:
       - "5001:5000"
     volumes:
       - .:/app
+      - ./uploads:/app/uploads
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/expensedb
+      # Set the language for OCR. 'en' for English, 'es' for Spanish.
+      # Change this value and restart the container to switch languages.
+      - OCR_LANGUAGE=en
     depends_on:
       db:
         condition: service_healthy

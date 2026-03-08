@@ -1,4 +1,4 @@
-# app.py (Now with Spanish OCR support)
+# app.py
 import os
 import re
 from datetime import datetime, date
@@ -29,13 +29,18 @@ login_manager.login_view = 'login'
 ocr_reader = None
 
 def get_ocr_reader():
-    """Creates and returns a single instance of the EasyOCR reader."""
+    """
+    Creates and returns a single instance of the EasyOCR reader based on
+    the OCR_LANGUAGE environment variable.
+    """
     global ocr_reader
     if ocr_reader is None:
-        print("Initializing EasyOCR for the first time... (This may take a moment)")
-        # --- THIS IS THE CORRECTED LINE ---
-        # Now loading both English and Spanish models
-        ocr_reader = easyocr.Reader(['en', 'es'])
+        # Read the desired language from the environment, defaulting to 'en'
+        lang_code = os.environ.get('OCR_LANGUAGE', 'en').lower()
+
+        print(f"Initializing EasyOCR for the first time with language: '{lang_code}'...")
+        # Now loading only ONE language model to conserve memory
+        ocr_reader = easyocr.Reader([lang_code])
         print("EasyOCR Initialized.")
     return ocr_reader
 
