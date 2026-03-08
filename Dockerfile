@@ -1,9 +1,13 @@
-# Dockerfile
+# Dockerfile (Switching to Tesseract OCR)
 FROM python:3.11
 
-# Install system dependencies for postgresql-client (for the healthcheck)
-# and libgl1 (for EasyOCR)
-RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client libgl1 && rm -rf /var/lib/apt/lists/*
+# Install Tesseract OCR engine and its Spanish & English language packs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-spa \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

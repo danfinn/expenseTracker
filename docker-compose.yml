@@ -1,4 +1,4 @@
-# docker-compose.yml
+# docker-compose.yml (The Final, Correct Version with Timeout)
 version: '3.8'
 
 services:
@@ -11,12 +11,12 @@ services:
       - ./uploads:/app/uploads
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/expensedb
-      # Set the language for OCR. 'en' for English, 'es' for Spanish.
-      # Change this value and restart the container to switch languages.
-      - OCR_LANGUAGE=en
     depends_on:
       db:
         condition: service_healthy
+    # This command increases the worker timeout to 120 seconds,
+    # giving the app enough time to start on a low-resource machine.
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "120", "app:app"]
 
   db:
     image: postgres:13

@@ -1,4 +1,4 @@
-# app.py
+# app.py (Using Tesseract for Low Memory)
 import os
 import re
 from datetime import datetime, date
@@ -7,7 +7,9 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-import easyocr
+# Import Pillow for image handling and pytesseract for OCR
+from PIL import Image
+import pytesseract
 
 # --- Initialization & Config ---
 app = Flask(__name__)
@@ -25,24 +27,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# --- OCR LAZY INITIALIZATION ---
-ocr_reader = None
-
-def get_ocr_reader():
-    """
-    Creates and returns a single instance of the EasyOCR reader based on
-    the OCR_LANGUAGE environment variable.
-    """
-    global ocr_reader
-    if ocr_reader is None:
-        # Read the desired language from the environment, defaulting to 'en'
-        lang_code = os.environ.get('OCR_LANGUAGE', 'en').lower()
-
-        print(f"Initializing EasyOCR for the first time with language: '{lang_code}'...")
-        # Now loading only ONE language model to conserve memory
-        ocr_reader = easyocr.Reader([lang_code])
-        print("EasyOCR Initialized.")
-    return ocr_reader
 
 # --- Database Models ---
 class User(UserMixin, db.Model):
@@ -67,10 +51,12 @@ class Expense(db.Model):
 with app.app_context():
     db.create_all()
 
+
 # --- User Loader ---
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
 
 # --- Helper Functions ---
 def parse_receipt(text):
@@ -102,7 +88,8 @@ def parse_receipt(text):
 def string_to_date(date_string):
     return datetime.strptime(date_string, '%Y-%m-%d').date()
 
-# --- Public Authentication Routes ---
+
+# --- Routes ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -138,7 +125,7 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- Main Protected Application Routes ---
+
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -152,9 +139,10 @@ def index():
         db.session.add(new_expense)
         db.session.commit()
         return redirect(url_for('index'))
-    else: # GET request
+    else:
         expenses = db.session.execute(db.select(Expense).where(Expense.user_id == current_user.id).order_by(Expense.expense_date.desc(), Expense.id.desc())).scalars().all()
         return render_template('index.html', expenses=expenses, today=date.today().isoformat())
+
 
 @app.route('/delete/<int:expense_id>', methods=['POST'])
 @login_required
@@ -165,6 +153,7 @@ def delete_expense(expense_id):
     db.session.delete(expense_to_delete)
     db.session.commit()
     return redirect(url_for('index'))
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
@@ -179,6 +168,7 @@ def upload_receipt():
             file.save(filepath)
             return redirect(url_for('review_scan', filename=filename))
     return render_template('upload.html')
+
 
 @app.route('/review/<filename>', methods=['GET', 'POST'])
 @login_required
@@ -195,9 +185,15 @@ def review_scan(filename):
         return redirect(url_for('index'))
 
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    reader = get_ocr_reader()
-    result = reader.readtext(filepath, detail=0, paragraph=True)
-    raw_text = '\n'.join(result)
+
+    # --- THIS IS THE NEW OCR LOGIC ---
+    # Use pytesseract to read the image file.
+    # The 'lang' argument tells Tesseract which language models to use.
+    try:
+        raw_text = pytesseract.image_to_string(Image.open(filepath), lang='eng+spa')
+    except Exception as e:
+        flash(f"OCR failed: {e}")
+        raw_text = "OCR failed. Please enter details manually."
 
     description, amount, expense_date = parse_receipt(raw_text)
 
@@ -207,6 +203,7 @@ def review_scan(filename):
         expense_date=expense_date.isoformat(),
         raw_text=raw_text
     )
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
