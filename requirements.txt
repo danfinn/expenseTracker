@@ -1,4 +1,4 @@
-# requirements.txt (Using pytesseract)
+# requirements.txt
 Flask==3.0.3
 gunicorn==22.0.0
 Flask-SQLAlchemy==3.1.1
@@ -6,4 +6,5 @@ psycopg2-binary==2.9.9
 Flask-Login==0.6.3
 Pillow==10.3.0
 pytesseract==0.3.10
+requests==2.31.0
 

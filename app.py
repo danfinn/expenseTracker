@@ -1,4 +1,4 @@
-# app.py (Using Tesseract for Low Memory)
+# app.py (Corrected for Registration Failure)
 import os
 import re
 from datetime import datetime, date
@@ -7,9 +7,9 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-# Import Pillow for image handling and pytesseract for OCR
 from PIL import Image
 import pytesseract
+import requests
 
 # --- Initialization & Config ---
 app = Flask(__name__)
@@ -27,38 +27,55 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-
 # --- Database Models ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     expenses = db.relationship('Expense', backref='owner', lazy=True)
-
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    description = db.Column(db.String(200), nullable=False)
     amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(200), nullable=False)
     expense_date = db.Column(db.Date, nullable=False, default=date.today)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    original_amount = db.Column(db.Float, nullable=False)
+    original_currency = db.Column(db.String(3), nullable=False)
 
 with app.app_context():
     db.create_all()
-
 
 # --- User Loader ---
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
-
 # --- Helper Functions ---
+CURRENCIES = ['USD', 'MXN', 'EUR', 'GBP', 'JPY', 'CAD']
+
+def convert_to_usd(amount, from_currency):
+    if from_currency == 'USD':
+        return amount
+    try:
+        api_url = f"https://open.er-api.com/v6/latest/{from_currency}"
+        response = requests.get(api_url)
+        response.raise_for_status()
+        data = response.json()
+        if data.get("result") == "success":
+            usd_rate = data['rates']['USD']
+            return amount * usd_rate
+        else:
+            flash(f"Warning: Could not get exchange rate for {from_currency}. Amount saved without conversion.")
+            return amount
+    except requests.exceptions.RequestException as e:
+        flash(f"Warning: Could not connect to currency API. Amount saved without conversion. Error: {e}")
+        return amount
+
 def parse_receipt(text):
     lines = text.split('\n')
     description = "Unknown"
@@ -88,8 +105,7 @@ def parse_receipt(text):
 def string_to_date(date_string):
     return datetime.strptime(date_string, '%Y-%m-%d').date()
 
-
-# --- Routes ---
+# --- Public Authentication Routes ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -115,8 +131,11 @@ def register():
         new_user.set_password(request.form['password'])
         db.session.add(new_user)
         db.session.commit()
-        flash('Registration successful! Please log in.')
-        return redirect(url_for('login'))
+        # --- THIS IS THE FIX ---
+        # Log the user in automatically after registration
+        login_user(new_user)
+        flash('Registration successful! You are now logged in.')
+        return redirect(url_for('index')) # Redirect to the main app page
     return render_template('register.html')
 
 @app.route('/logout')
@@ -125,24 +144,28 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-
+# --- Main Protected Application Routes ---
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
     if request.method == 'POST':
+        original_amount = float(request.form['amount'])
+        original_currency = request.form['currency']
+        usd_amount = convert_to_usd(original_amount, original_currency)
         new_expense = Expense(
             description=request.form['description'],
-            amount=float(request.form['amount']),
+            amount=usd_amount,
             expense_date=string_to_date(request.form['expense_date']),
-            owner=current_user
+            owner=current_user,
+            original_amount=original_amount,
+            original_currency=original_currency
         )
         db.session.add(new_expense)
         db.session.commit()
         return redirect(url_for('index'))
     else:
         expenses = db.session.execute(db.select(Expense).where(Expense.user_id == current_user.id).order_by(Expense.expense_date.desc(), Expense.id.desc())).scalars().all()
-        return render_template('index.html', expenses=expenses, today=date.today().isoformat())
-
+        return render_template('index.html', expenses=expenses, today=date.today().isoformat(), currencies=CURRENCIES)
 
 @app.route('/delete/<int:expense_id>', methods=['POST'])
 @login_required
@@ -153,7 +176,6 @@ def delete_expense(expense_id):
     db.session.delete(expense_to_delete)
     db.session.commit()
     return redirect(url_for('index'))
-
 
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
@@ -169,26 +191,26 @@ def upload_receipt():
             return redirect(url_for('review_scan', filename=filename))
     return render_template('upload.html')
 
-
 @app.route('/review/<filename>', methods=['GET', 'POST'])
 @login_required
 def review_scan(filename):
     if request.method == 'POST':
+        original_amount = float(request.form['amount'])
+        original_currency = request.form['currency']
+        usd_amount = convert_to_usd(original_amount, original_currency)
         final_expense = Expense(
             description=request.form['description'],
-            amount=float(request.form['amount']),
+            amount=usd_amount,
             expense_date=string_to_date(request.form['expense_date']),
-            owner=current_user
+            owner=current_user,
+            original_amount=original_amount,
+            original_currency=original_currency
         )
         db.session.add(final_expense)
         db.session.commit()
         return redirect(url_for('index'))
 
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-    # --- THIS IS THE NEW OCR LOGIC ---
-    # Use pytesseract to read the image file.
-    # The 'lang' argument tells Tesseract which language models to use.
     try:
         raw_text = pytesseract.image_to_string(Image.open(filepath), lang='eng+spa')
     except Exception as e:
@@ -201,9 +223,9 @@ def review_scan(filename):
         description=description,
         amount=amount,
         expense_date=expense_date.isoformat(),
-        raw_text=raw_text
+        raw_text=raw_text,
+        currencies=CURRENCIES
     )
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
