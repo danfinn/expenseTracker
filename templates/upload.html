@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Receipt</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Upload Receipt</h1>
+            <nav>
+                <a href="{{ url_for('index') }}">&larr; Back to Expenses</a>
+            </nav>
+        </header>
+
+        <div class="card">
+            <h2>Select an image to scan</h2>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <input type="file" name="receipt" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Scan Receipt</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+

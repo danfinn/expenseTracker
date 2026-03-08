@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Expenses</h1>
+            <nav>
+                <a href="{{ url_for('upload_receipt') }}">Upload</a>
+                &nbsp;|&nbsp;
+                <a href="{{ url_for('logout') }}">Logout</a>
+            </nav>
+        </header>
+
+        <div class="card">
+            <h2>Add New Expense</h2>
+            <form method="POST" action="{{ url_for('index') }}">
+                <div class="form-group">
+                    <input type="date" name="expense_date" value="{{ today }}" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="description" placeholder="What was this for?" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" name="amount" step="0.01" placeholder="Amount ($)" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Expense</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>History</h2>
+            <ul class="expense-list">
+                {% for expense in expenses %}
+                    <li class="expense-item">
+                        <div class="expense-details">
+                            <div class="description">{{ expense.description }}</div>
+                            <div class="date">{{ expense.expense_date.strftime('%B %d, %Y') }}</div>
+                        </div>
+                        <span class="expense-amount">${{ "%.2f"|format(expense.amount) }}</span>
+                        <form method="POST" action="{{ url_for('delete_expense', expense_id=expense.id) }}" onsubmit="return confirm('Are you sure?');">
+                            <button type="submit" class="delete-btn" title="Delete Expense">&times;</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li>No expenses yet. Add one above!</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+

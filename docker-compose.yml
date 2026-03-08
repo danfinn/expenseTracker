@@ -1,0 +1,33 @@
+# docker-compose.yml (The Final, Correct Version)
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5001:5000"
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/expensedb
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=expensedb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d expensedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+

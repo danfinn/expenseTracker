@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Expense</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Review Scan</h1>
+            <nav>
+                <a href="{{ url_for('index') }}">&larr; Back to Expenses</a>
+            </nav>
+        </header>
+
+        <div class="card">
+            <h2>Confirm Details</h2>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="expense_date" value="{{ expense_date }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" name="description" value="{{ description }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <input type="number" id="amount" name="amount" step="0.01" value="{{ amount }}" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Expense</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Raw Scanned Text</h2>
+            <div class="raw-text">{{ raw_text }}</div>
+        </div>
+    </div>
+</body>
+</html>
+
