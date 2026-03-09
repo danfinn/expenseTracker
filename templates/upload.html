@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Receipt</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Using a consistent version number for the stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=13.0">
 </head>
 <body>
     <div class="container">
+        <!-- Updated Header -->
         <header>
-            <h1>Upload Receipt</h1>
-            <nav>
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="App Logo" class="logo-img">
+            <nav style="margin-left: auto;">
                 <a href="{{ url_for('index') }}">&larr; Back to Expenses</a>
             </nav>
         </header>
