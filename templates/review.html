@@ -1,4 +1,3 @@
-<!-- templates/review.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,8 +9,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Review Scan</h1>
-            <nav>
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="App Logo" class="logo-img">
+            <nav style="margin-left: auto;">
                 <a href="{{ url_for('index') }}">&larr; Back to Expenses</a>
             </nav>
         </header>
@@ -26,6 +25,14 @@
                 <div class="form-group">
                     <label for="description">Description</label>
                     <input type="text" id="description" name="description" value="{{ description }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        {% for category in categories %}
+                            <option value="{{ category }}" {% if category == 'Misc' %}selected{% endif %}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="form-group" style="display: flex; gap: 1rem;">
                     <div style="flex-grow: 1;">

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Expense Tracker</title>
-    <!-- Final version number -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=13.0">
     <style>
         .month-summary {
@@ -16,13 +15,22 @@
             background-color: var(--bg-color);
             border-radius: 0.5rem;
         }
+        /* Style for the new category pill */
+        .category-pill {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            background-color: #e2e8f0;
+            color: #475569;
+            margin-left: 1rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <img src="{{ url_for('static', filename='logo.png') }}" alt="App Logo" class="logo-img">
-            <!-- The "Expenses" h1 tag has been removed -->
             <nav style="margin-left: auto;">
                 <a href="{{ url_for('upload_receipt') }}">Upload</a>
                 &nbsp;|&nbsp;
@@ -49,6 +57,13 @@
                 <div class="form-group">
                     <input type="text" name="description" placeholder="What was this for?" required>
                 </div>
+                <div class="form-group">
+                    <select name="category">
+                        {% for category in categories %}
+                            <option value="{{ category }}" {% if category == 'Misc' %}selected{% endif %}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="form-group" style="display: flex; gap: 1rem;">
                     <input type="number" name="amount" step="0.01" placeholder="Amount" required style="flex-grow: 1;">
                     <select name="currency" class="currency-select" style="padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-color);">
@@ -70,7 +85,10 @@
                 {% for expense in expenses %}
                     <li class="expense-item">
                         <div class="expense-details">
-                            <div class="description">{{ expense.description }}</div>
+                            <div class="description">
+                                <span>{{ expense.description }}</span>
+                                <span class="category-pill">{{ expense.category }}</span>
+                            </div>
                             <div class="date">
                                 {{ expense.expense_date.strftime('%B %d, %Y') }}
                                 {% if expense.original_currency != 'USD' %}

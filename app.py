@@ -1,10 +1,9 @@
-# app.py (With Monthly Total Calculation)
+# app.py (With Expense Categories)
 import os
 import re
 from datetime import datetime, date
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-# We need 'func' for the SUM() function and 'extract' for date part extraction
 from sqlalchemy import func, extract
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -29,6 +28,10 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+# --- Master Data Lists ---
+CURRENCIES = ['USD', 'MXN', 'EUR', 'GBP', 'JPY', 'CAD']
+CATEGORIES = ['Food', 'Travel', 'Transportation', 'Housing', 'Utilities', 'Health', 'Entertainment', 'Shopping', 'Personal Care', 'Misc']
+
 # --- Database Models ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -44,6 +47,7 @@ class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(50), nullable=False, default='Misc') # New category column
     expense_date = db.Column(db.Date, nullable=False, default=date.today)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     original_amount = db.Column(db.Float, nullable=False)
@@ -58,8 +62,6 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 # --- Helper Functions ---
-CURRENCIES = ['USD', 'MXN', 'EUR', 'GBP', 'JPY', 'CAD']
-
 def convert_to_usd(amount, from_currency):
     if from_currency == 'USD':
         return amount
@@ -155,6 +157,7 @@ def index():
         new_expense = Expense(
             description=request.form['description'],
             amount=usd_amount,
+            category=request.form['category'], # Get category from form
             expense_date=string_to_date(request.form['expense_date']),
             owner=current_user,
             original_amount=original_amount,
@@ -164,10 +167,8 @@ def index():
         db.session.commit()
         return redirect(url_for('index'))
 
-    # --- THIS IS THE NEW LOGIC FOR THE MONTHLY TOTAL ---
     else: # GET request
         today = date.today()
-        # Query for the sum of expenses this month
         monthly_total_query = db.session.query(func.sum(Expense.amount)).filter(
             Expense.user_id == current_user.id,
             extract('month', Expense.expense_date) == today.month,
@@ -175,7 +176,6 @@ def index():
         )
         monthly_total = monthly_total_query.scalar() or 0.0
 
-        # Get all expenses for the list
         expenses = db.session.execute(db.select(Expense).where(Expense.user_id == current_user.id).order_by(Expense.expense_date.desc(), Expense.id.desc())).scalars().all()
 
         return render_template(
@@ -183,6 +183,7 @@ def index():
             expenses=expenses,
             today=today.isoformat(),
             currencies=CURRENCIES,
+            categories=CATEGORIES, # Pass categories to template
             monthly_total=monthly_total,
             current_month_name=today.strftime('%B')
         )
@@ -221,6 +222,7 @@ def review_scan(filename):
         final_expense = Expense(
             description=request.form['description'],
             amount=usd_amount,
+            category=request.form['category'], # Get category from form
             expense_date=string_to_date(request.form['expense_date']),
             owner=current_user,
             original_amount=original_amount,
@@ -244,7 +246,8 @@ def review_scan(filename):
         amount=amount,
         expense_date=expense_date.isoformat(),
         raw_text=raw_text,
-        currencies=CURRENCIES
+        currencies=CURRENCIES,
+        categories=CATEGORIES # Pass categories to template
     )
 
 if __name__ == '__main__':
