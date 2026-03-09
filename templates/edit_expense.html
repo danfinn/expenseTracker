@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Expense</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="App Logo" class="logo-img">
+            <nav style="margin-left: auto;">
+                <a href="{{ url_for('index') }}">&larr; Back to Expenses</a>
+            </nav>
+        </header>
+
+        <div class="card">
+            <h2>Edit Expense Details</h2>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <!-- Pre-fill date from the expense object -->
+                    <input type="date" id="date" name="expense_date" value="{{ expense.expense_date.isoformat() }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <!-- Pre-fill description -->
+                    <input type="text" id="description" name="description" value="{{ expense.description }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        {% for category in categories %}
+                            <!-- Select the expense's current category -->
+                            <option value="{{ category }}" {% if category == expense.category %}selected{% endif %}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="display: flex; gap: 1rem;">
+                    <div style="flex-grow: 1;">
+                        <label for="amount">Amount</label>
+                        <!-- Pre-fill original amount -->
+                        <input type="number" id="amount" name="amount" step="0.01" value="{{ expense.original_amount }}" required>
+                    </div>
+                    <div>
+                        <label for="currency">Currency</label>
+                        <select id="currency" name="currency" style="padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-color); height: 50px;">
+                            {% for currency in currencies %}
+                                <!-- Select the expense's original currency -->
+                                <option value="{{ currency }}" {% if currency == expense.original_currency %}selected{% endif %}>{{ currency }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Expense</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+

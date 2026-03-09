@@ -1,4 +1,4 @@
-# app.py (With Expense Categories)
+# app.py (With Edit Functionality)
 import os
 import re
 from datetime import datetime, date
@@ -47,7 +47,7 @@ class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200), nullable=False)
-    category = db.Column(db.String(50), nullable=False, default='Misc') # New category column
+    category = db.Column(db.String(50), nullable=False, default='Misc')
     expense_date = db.Column(db.Date, nullable=False, default=date.today)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     original_amount = db.Column(db.Float, nullable=False)
@@ -157,7 +157,7 @@ def index():
         new_expense = Expense(
             description=request.form['description'],
             amount=usd_amount,
-            category=request.form['category'], # Get category from form
+            category=request.form['category'],
             expense_date=string_to_date(request.form['expense_date']),
             owner=current_user,
             original_amount=original_amount,
@@ -167,7 +167,7 @@ def index():
         db.session.commit()
         return redirect(url_for('index'))
 
-    else: # GET request
+    else:
         today = date.today()
         monthly_total_query = db.session.query(func.sum(Expense.amount)).filter(
             Expense.user_id == current_user.id,
@@ -183,9 +183,46 @@ def index():
             expenses=expenses,
             today=today.isoformat(),
             currencies=CURRENCIES,
-            categories=CATEGORIES, # Pass categories to template
+            categories=CATEGORIES,
             monthly_total=monthly_total,
             current_month_name=today.strftime('%B')
+        )
+
+# --- NEW EDIT ROUTE ---
+@app.route('/edit/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def edit_expense(expense_id):
+    expense_to_edit = db.get_or_404(Expense, expense_id)
+    # Security check: ensure the expense belongs to the current user
+    if expense_to_edit.owner != current_user:
+        return "Forbidden", 403
+
+    if request.method == 'POST':
+        # Get updated data from the form
+        original_amount = float(request.form['amount'])
+        original_currency = request.form['currency']
+
+        # Recalculate USD amount
+        usd_amount = convert_to_usd(original_amount, original_currency)
+
+        # Update the expense object with the new data
+        expense_to_edit.description = request.form['description']
+        expense_to_edit.expense_date = string_to_date(request.form['expense_date'])
+        expense_to_edit.category = request.form['category']
+        expense_to_edit.original_amount = original_amount
+        expense_to_edit.original_currency = original_currency
+        expense_to_edit.amount = usd_amount
+
+        db.session.commit() # Commit the changes to the database
+        flash('Expense updated successfully!')
+        return redirect(url_for('index'))
+
+    else: # GET request: show the edit form pre-filled with data
+        return render_template(
+            'edit_expense.html',
+            expense=expense_to_edit,
+            currencies=CURRENCIES,
+            categories=CATEGORIES
         )
 
 @app.route('/delete/<int:expense_id>', methods=['POST'])
@@ -222,7 +259,7 @@ def review_scan(filename):
         final_expense = Expense(
             description=request.form['description'],
             amount=usd_amount,
-            category=request.form['category'], # Get category from form
+            category=request.form['category'],
             expense_date=string_to_date(request.form['expense_date']),
             owner=current_user,
             original_amount=original_amount,
@@ -247,7 +284,7 @@ def review_scan(filename):
         expense_date=expense_date.isoformat(),
         raw_text=raw_text,
         currencies=CURRENCIES,
-        categories=CATEGORIES # Pass categories to template
+        categories=CATEGORIES
     )
 
 if __name__ == '__main__':
